@@ -1,0 +1,68 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.3"
+
+    defaultConfig {
+        applicationId "jianqiang.com.activityhook1"
+        minSdkVersion 22
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+}
+
+afterEvaluate {
+    for (variant in android.applicationVariants) {
+        def scope = variant.getVariantData().getScope()
+        String mergeTaskName = scope.getMergeResourcesTask().name
+
+        def mergeTask = tasks.getByName(mergeTaskName)
+
+        mergeTask.doLast {
+            copy {
+                int i = 0
+                println android.sourceSets.main.res.srcDirs
+                from(android.sourceSets.main.res.srcDirs) {
+                    include 'values/public.xml'
+                    rename 'public.xml', (i++ == 0 ? "public.xml" : "public_${i}.xml")
+                }
+
+                into(mergeTask.outputDir)
+            }
+        }
+    }
+}
+
+//start----------插件相关的，用来生成sdk-jar的------------------
+//dependsOn 可根据实际需要增加或更改
+task buildJar(dependsOn: ['compileReleaseJavaWithJavac'], type: Jar) {
+    //最终的 Jar 包名
+    archiveName = "sdk2.jar"
+
+    //需打包的资源所在的路径集
+    def srcClassDir = [project.buildDir.absolutePath + "/intermediates/classes/release"]
+
+    //初始化资源路径集
+    from srcClassDir
+
+    //只导入资源路径集下的部分资源
+    //include "jianqiang/com/activityhook1/MainActivity"
+
+    //去除路径集下部分的资源
+    //exclude "jianqiang/com/activityhook1/MainActivity"
+    //注: exclude include 支持可变长参数
+}
+//end----------插件相关的，用来生成sdk-jar的------------------
